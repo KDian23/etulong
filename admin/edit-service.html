@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="shortcut icon" href="./../assets/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="./../style/admin.css">
+    <title>Services</title>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="nav">
+                <div class="logo">
+                    <img src="./../assets/logo.png" alt="logo">
+                    <h1>eTULONG</h1>
+                </div>
+                <div class="menu">
+                    <a href="./dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+                    <a href="./services.html"  class="active"><i class="fa-solid fa-bookmark"></i> Services</a>
+                    <a href="./users.html"><i class="fa-solid fa-user"></i> Users</a>
+                    <a href="./requests.html"><i class="fa-solid fa-inbox"></i> Requests</a>
+                    <a href="./profile.html"><i class="fa-solid fa-circle-user"></i> Profile</a>
+                </div>
+            </div>
+            <div class="logout">
+                <button id="logout-button"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+        </div>
+        <div class="main-panel">
+            <div class="header">
+                <p class="title">Services</p>
+                <div class="admin">
+                    <b><p id="uname">Admin</p></b>
+                    <div class="img">
+                        <img src="" alt="" id="admin_pic">
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <form id="edit-service-form">
+                    <a href="./services.html"><i class="fa-solid fa-arrow-left"></i></a>
+                    <h3>Edit Service</h3>
+
+                    <div class="input-g">
+                        <label for="serviceName">Service Name:</label>
+                        <input type="text" id="serviceName" name="serviceName" required>
+                    </div>
+
+                    <div class="input-g">
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description" required></textarea>
+                    </div>
+
+                    <div class="input-g">
+                        <label for="requirements">Requirements:</label>
+                        <input type="text" id="requirements" name="requirements" required>
+                    </div>
+
+                    <div class="input-g">
+                        <label for="icon">Add icon <i><small>(png, jpg, svg)</small></i></label>
+                        <input type="file" id="icon" accept="image/*"/>
+                    </div>
+                    <button id="update">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, where,getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+        import { getAuth,signOut, } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2DZfp8Tnu53kpaBhqY_COiglIanw46Ks",
+            authDomain: "capstone-7239a.firebaseapp.com",
+            projectId: "capstone-7239a",
+            storageBucket: "capstone-7239a.appspot.com",
+            messagingSenderId: "297054120073",
+            appId: "1:297054120073:web:6dd66b7b6d7667ea8efe58",
+            measurementId: "G-GC7CPWCC0V"
+        };
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        const adminpic = document.getElementById('admin_pic');
+
+        function getAuthenticatedUserName() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log("User is authenticated:", user.uid);
+                    const email = user.email; 
+
+                    try {
+                        const usersRef = collection(db, "users");
+                        const q = query(usersRef, where("email", "==", email));
+
+                        const querySnapshot = await getDocs(q);
+
+                        if (!querySnapshot.empty) {
+                            const userDoc = querySnapshot.docs[0].data(); 
+                            const userName = userDoc.name; 
+                            document.getElementById('uname').innerHTML = userName
+                        } else {
+                            console.log(
+                                "No user found with the provided email."
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Error fetching user from Firestore: ",
+                            error
+                        );
+                    }
+
+
+
+                    try {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        if (userDocSnap.exists()) {
+                            const profilePictureUrl = userDocSnap.data().profilePictureUrl;
+
+                            if (profilePictureUrl) {
+                                adminpic.src = profilePictureUrl;
+                                adminpic.alt = "User's profile picture"; 
+                            } else {
+                                console.log("No profile picture found for this user.");
+                            }
+                        } else {
+                            console.log("User document not found.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data: ", error);
+                    }
+                } else {
+                    console.error("User is not authenticated");
+                }
+            });
+        }
+        getAuthenticatedUserName();
+
+        
+
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const documentId = getQueryParam('id');
+
+        if (documentId) {
+            const querySnapshot = await getDocs(collection(db, "services"));
+            let serviceData = null;
+
+            querySnapshot.forEach((doc) => {
+                if (doc.id === documentId) {
+                    serviceData = doc.data();
+                    serviceData.id = doc.id; 
+                }
+            });
+
+            if (serviceData) {
+                document.getElementById('serviceName').value = serviceData.serviceName || '';
+                document.getElementById('description').value = serviceData.description || '';
+                document.getElementById('requirements').value = serviceData.requirements.join(', ') || '';
+            } else {
+                console.log("No such document!");
+            }
+        } else {
+            console.error("No document ID in URL.");
+        }
+
+
+        const btnUpdate = document.getElementById('update');
+
+        btnUpdate.addEventListener('click', async(e) => {
+            e.preventDefault();
+
+    
+            const serviceName = document.getElementById('serviceName').value;
+            const description = document.getElementById('description').value;
+            const requirements = document.getElementById('requirements').value.split(',').map(item => item.trim());
+            const icon = document.getElementById('icon');
+
+            const file = icon.files[0]; 
+
+            if (!serviceName || !description || !requirements.length || !icon) {
+                alert('Please fill in all fields.');
+                return;  
+            }
+
+            if (file) {
+                const storageRef = ref(storage, 'icons/' + file.name);
+
+                try {
+                    await uploadBytes(storageRef, file);
+                    console.log('File uploaded successfully!');
+
+                    const downloadURL = await getDownloadURL(storageRef);
+                    const icon = downloadURL;
+
+                    const updatedData = {
+                        serviceName,
+                        description,
+                        requirements,
+                        icon
+                    };
+
+                    const docRef = doc(db, 'services', documentId);  
+                    updateDoc(docRef, updatedData)
+                        .then(() => {
+                            alert('Service updated successfully!');
+                        })
+                        .catch((error) => {
+                            console.error('Error updating service:', error);
+                            alert('There was an error updating the service.');
+                        });
+                        } catch (error) {
+                            console.error('Error uploading file:', error);
+                        }
+                    }
+
+            
+        });
+
+
+
+        const logoutButton = document.getElementById("logout-button");
+        logoutButton.addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "./../index.html";
+            } catch (error) {
+                console.error("Error logging out: ", error);
+            }
+        });
+
+    </script>
+</body>
+</html>

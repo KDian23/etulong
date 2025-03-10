@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+            integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <link rel="shortcut icon" href="./../assets/logo.png" type="image/x-icon">
+        <link rel="stylesheet" href="./../style/admin.css" />
+        <title>Profile</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="sidebar">
+                <div class="nav">
+                    <div class="logo">
+                        <img src="./../assets/logo.png" alt="logo">
+                        <h1>eTULONG</h1>
+                    </div>
+                    <div class="menu">
+                        <a href="./dashboard.html"
+                            ><i class="fa-solid fa-house"></i> Dashboard</a
+                        >
+                        <a href="./services.html"
+                            ><i class="fa-solid fa-bookmark"></i> Services</a
+                        >
+                        <a href="./users.html"
+                            ><i class="fa-solid fa-user"></i> Users</a
+                        >
+                        <a href="./requests.html"
+                            ><i class="fa-solid fa-inbox"></i> Requests</a
+                        >
+                        <a href="./profile.html" class="active"
+                            ><i class="fa-solid fa-circle-user"></i> Profile</a
+                        >
+                    </div>
+                </div>
+                <div class="logout">
+                    <button id="logout-button">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="main-panel">
+                <div class="header">
+                    <p class="title">Profile</p>
+                    <div class="admin">
+                        <b><p id="uname">Admin</p></b>
+                        <div class="img">
+                            <img src="" alt="" id="admin_pic">
+                        </div>
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="prof-container">
+                        <h3>Profile</h3>
+                        <div class="prof-pic">
+                            <div class="img">
+                                <img src="" alt="" id="profile" />
+                            </div>
+                            <div class="img-upt">
+                                <input type="file" accept="image/*" id="pic" />
+                                <button id="upt-pic">Change Profile</button>
+                            </div>
+                        </div>
+                        <div class="info">
+                            <label for="name">Name</label>
+                            <input type="text" name="name" id="name" />
+
+                            <label for="email">Email</label>
+                            <input
+                                type="text"
+                                name="email"
+                                id="email"
+                                disabled
+                            />
+
+                            <label for="contact">Contact</label>
+                            <input type="text" name="contact" id="contact" />
+
+                            <label for="role">Role</label>
+                            <input type="text" name="role" id="role" />
+
+                            <button id="update">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            getDoc,
+            doc,
+            query,
+            where,
+            updateDoc,
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import {
+            getStorage,
+            ref,
+            uploadBytes,
+            getDownloadURL,
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+        import {
+            getAuth,
+            signOut,
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2DZfp8Tnu53kpaBhqY_COiglIanw46Ks",
+            authDomain: "capstone-7239a.firebaseapp.com",
+            projectId: "capstone-7239a",
+            storageBucket: "capstone-7239a.appspot.com",
+            messagingSenderId: "297054120073",
+            appId: "1:297054120073:web:6dd66b7b6d7667ea8efe58",
+            measurementId: "G-GC7CPWCC0V",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        const nameInput = document.querySelector("input[name='name']");
+        const emailInput = document.querySelector("input[name='email']");
+        const contactInput = document.querySelector("input[name='contact']");
+        const roleInput = document.querySelector("input[name='role']");
+        const img = document.getElementById("profile");
+        const picInput = document.getElementById("pic");
+        const uptpic = document.getElementById("upt-pic");
+        const update = document.getElementById("update");
+        const adminpic = document.getElementById('admin_pic');
+
+
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                console.log("User is authenticated:", user.uid);
+                const email = user.email;
+
+                try {
+                    const usersRef = collection(db, "users");
+                    const q = query(usersRef, where("email", "==", email));
+
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        const userDoc = querySnapshot.docs[0].data();
+                        const userName = userDoc.name;
+                        document.getElementById("uname").innerHTML = userName;
+                    } else {
+                        console.log("No user found with the provided email.");
+                    }
+                } catch (error) {
+                    console.error(
+                        "Error fetching user from Firestore: ",
+                        error
+                    );
+                }
+
+                const userId = user.uid;
+
+                uptpic.addEventListener("click", async () => {
+                    const file = picInput.files[0];
+
+                    if (!file) {
+                        alert("Please select an image!");
+                        return;
+                    }
+
+                    try {
+                        const storageRef = ref(
+                            storage,
+                            `admin_img/${user.uid}/${file.name}`
+                        );
+                        const uploadSnapshot = await uploadBytes(
+                            storageRef,
+                            file
+                        );
+                        console.log("File uploaded successfully");
+
+                        const downloadURL = await getDownloadURL(
+                            uploadSnapshot.ref
+                        );
+                        console.log("Image URL: ", downloadURL);
+
+                        const userDocRef = doc(db, "users", user.uid);
+                        await updateDoc(userDocRef, {
+                            profilePictureUrl: downloadURL,
+                        });
+
+                        alert('Profile Updated Successfully!');
+                        window.location.href = './profile.html';
+                    } catch (error) {
+                        console.error("Error uploading file: ", error);
+                    }
+                });
+
+                try {
+                    const userDocRef = doc(db, "users", userId);
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data(); 
+                        nameInput.value = userData.name || ""; 
+                        emailInput.value = userData.email || "";
+                        contactInput.value = userData.contact || "";
+                        roleInput.value = userData.role || ""; 
+                        img.src = userData.profilePictureUrl;
+                        adminpic.src = userData.profilePictureUrl;
+                    } else {
+                        console.log("No such user document!");
+                    }
+                } catch (error) {
+                    console.error("Error fetching user document:", error);
+                }
+
+                
+
+
+                update.addEventListener('click', async () => {
+                    const name = nameInput.value;
+                    const contact = contactInput.value;
+                    const role = roleInput.value;
+
+                    try {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        await updateDoc(userDocRef, {
+                            name: name,
+                            contact: contact,
+                            role: role
+                        });
+
+                        alert("Changes saved successfully!");
+                        window.location.href = "./profile.html";
+                    } catch (error) {
+                        console.error("Error updating profile: ", error);
+                        alert("An error occurred. Please try again.");
+                    }
+                })
+            } else {
+                console.error("User is not authenticated");
+            }
+        });
+
+        const logoutButton = document.getElementById("logout-button");
+        logoutButton.addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "./../index.html";
+            } catch (error) {
+                console.error("Error logging out: ", error);
+            }
+        });
+    </script>
+</html>

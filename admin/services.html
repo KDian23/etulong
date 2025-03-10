@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="shortcut icon" href="./../assets/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="./../style/admin.css">
+    <title>Services</title>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="nav">
+                <div class="logo">
+                    <img src="./../assets/logo.png" alt="logo">
+                    <h1>eTULONG</h1>
+                </div>
+                <div class="menu">
+                    <a href="./dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+                    <a href="./services.html"  class="active"><i class="fa-solid fa-bookmark"></i> Services</a>
+                    <a href="./users.html"><i class="fa-solid fa-user"></i> Users</a>
+                    <a href="./requests.html"><i class="fa-solid fa-inbox"></i> Requests</a>
+                    <a href="./profile.html"><i class="fa-solid fa-circle-user"></i> Profile</a>
+                </div>
+            </div>
+            <div class="logout">
+                <button id="logout-button"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+        </div>
+        <div class="main-panel">
+            <div class="header">
+                <p class="title">Services</p>
+                <div class="admin">
+                    <b><p id="uname">Admin</p></b>
+                    <div class="img">
+                        <img src="" alt="" id="admin_pic">
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="srv-container">
+                    <div class="services">
+                        <div id="services-container"></div>
+                    </div>
+                    <div class="add-srv">
+                        <h3>Add new service</h3>
+                        <form>
+                            <div class="input-g">
+                                <label for="srv-name">Service name</label>
+                                <input type="text" id="srv-name" required/>
+                            </div>
+                            <div class="input-g">
+                                <label for="desc">Description</label>
+                                <textarea id="desc" required></textarea>
+                            </div>
+                            <div class="input-g">
+                                <label for="req">Requirements</label>
+                                <input type="text" id="req" placeholder="Use comma to separate" required/>
+                            </div>
+                            <div class="input-g">
+                                <label for="icon">Add icon <i><small>(png, jpg, svg)</small></i></label>
+                                <input type="file" id="icon"/>
+                            </div>
+                            <button type="submit">Save</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, doc, getDoc, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes,getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+        import { getAuth, signOut, } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2DZfp8Tnu53kpaBhqY_COiglIanw46Ks",
+            authDomain: "capstone-7239a.firebaseapp.com",
+            projectId: "capstone-7239a",
+            storageBucket: "capstone-7239a.appspot.com",
+            messagingSenderId: "297054120073",
+            appId: "1:297054120073:web:6dd66b7b6d7667ea8efe58",
+            measurementId: "G-GC7CPWCC0V"
+        };
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        const adminpic = document.getElementById('admin_pic');
+
+
+        function getAuthenticatedUserName() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log("User is authenticated:", user.uid);
+                    const email = user.email; 
+
+                    try {
+                        const usersRef = collection(db, "users");
+                        const q = query(usersRef, where("email", "==", email));
+
+                        const querySnapshot = await getDocs(q);
+
+                        if (!querySnapshot.empty) {
+                            const userDoc = querySnapshot.docs[0].data(); 
+                            const userName = userDoc.name; 
+                            document.getElementById('uname').innerHTML = userName
+                        } else {
+                            console.log(
+                                "No user found with the provided email."
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Error fetching user from Firestore: ",
+                            error
+                        );
+                    }
+
+                    
+
+                    try {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        if (userDocSnap.exists()) {
+                            const profilePictureUrl = userDocSnap.data().profilePictureUrl;
+
+                            if (profilePictureUrl) {
+                                adminpic.src = profilePictureUrl;
+                                adminpic.alt = "User's profile picture"; 
+                            } else {
+                                console.log("No profile picture found for this user.");
+                            }
+                        } else {
+                            console.log("User document not found.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data: ", error);
+                    }
+                } else {
+                    console.error("User is not authenticated");
+                }
+            });
+        }
+        getAuthenticatedUserName();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const serviceName = document.getElementById('srv-name').value;
+                const description = document.getElementById('desc').value;
+                const requirementsInput = document.getElementById('req').value;
+                const iconFile = document.getElementById('icon').files[0];
+
+                if (iconFile && !['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'].includes(iconFile.type)) {
+                    alert('Please upload a PNG, JPG, or SVG file.');
+                    return;
+                }
+
+                const requirements = requirementsInput.split(',').map(req => req.trim());
+
+                let iconUrl = null;
+                if (iconFile) {
+                    const iconRef = ref(storage, `icons/${iconFile.name}`);
+                    try {
+                        await uploadBytes(iconRef, iconFile);
+                        const iconUrl = await getDownloadURL(iconRef);
+
+                        try {
+                            const docRef = await addDoc(collection(db, "services"), {
+                                serviceName: serviceName,
+                                description: description,
+                                requirements: requirements,
+                                icon: iconUrl,
+                            });
+                            console.log("Document written with ID: ", docRef.id);
+                            alert('Service saved successfully!');
+                            window.location.href="./services.html"
+                        } catch (e) {
+                            console.error("Error adding document: ", e);
+                            alert('Error saving service. Please try again.');
+                        }
+                    } catch (uploadError) {
+                        console.error("Error uploading file: ", uploadError);
+                        alert('Error uploading icon. Please try again.');
+                        return;
+                    }
+                }
+
+                
+            });
+        });
+
+
+
+
+
+
+
+
+        // PAG-RETRIEVE NI SA SERVICES
+        document.addEventListener('DOMContentLoaded', () => {
+
+        const displayServices = async () => {
+            const servicesContainer = document.getElementById('services-container');
+            servicesContainer.innerHTML = ''; 
+            try {
+                const querySnapshot = await getDocs(collection(db, "services"));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    const serviceCard = document.createElement('div');
+                    serviceCard.className = 'service-card';
+
+
+                    serviceCard.innerHTML = `
+                        <div class="img">${data.icon ? `<img src="${data.icon}" alt="${data.serviceName} icon">` : ''}</div>
+                        <div class="info">
+                            <h3>${data.serviceName}</h3>
+                            <p><strong>Description:</strong> ${data.description}</p>
+                            <p><strong>Requirements:</strong> ${data.requirements.join(', ')}</p>
+                            <div class="actions">
+                                <a href="edit-service.html?id=${data.id}" class="edit-btn">Edit</a>
+                                <a href="del-service.html?id=${data.id}" class="delete-btn">Delete</a>
+                            </div>
+                        </div>
+                    `;
+                    servicesContainer.appendChild(serviceCard);
+                });
+            } catch (e) {
+                console.error("Error retrieving services: ", e);
+            }
+        };
+
+        displayServices();
+        });
+
+
+
+
+        const logoutButton = document.getElementById("logout-button");
+        logoutButton.addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "./../index.html";
+            } catch (error) {
+                console.error("Error logging out: ", error);
+            }
+        });
+
+    </script>
+</body>
+</html>

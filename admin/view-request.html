@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+            integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"
+        ></script>
+
+        <link
+            rel="stylesheet"
+            href="https://cdn.datatables.net/2.2.0/css/dataTables.dataTables.min.css"
+        />
+        <script
+            src="https://cdn.datatables.net/2.2.0/js/dataTables.min.js"
+            defer
+        ></script>
+        <link rel="shortcut icon" href="./../assets/logo.png" type="image/x-icon">
+        <link rel="stylesheet" href="./../style/admin.css" />
+        <title>Requests</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="sidebar">
+                <div class="nav">
+                    <div class="logo">
+                        <img src="./../assets/logo.png" alt="logo">
+                        <h1>eTULONG</h1>
+                    </div>
+                    <div class="menu">
+                        <a href="./dashboard.html"
+                            ><i class="fa-solid fa-house"></i> Dashboard</a
+                        >
+                        <a href="./services.html"
+                            ><i class="fa-solid fa-bookmark"></i> Services</a
+                        >
+                        <a href="./users.html"
+                            ><i class="fa-solid fa-user"></i> Users</a
+                        >
+                        <a href="./requests.html" class="active"
+                            ><i class="fa-solid fa-inbox"></i> Requests</a
+                        >
+                        <a href="./profile.html"
+                            ><i class="fa-solid fa-circle-user"></i> Profile</a
+                        >
+                    </div>
+                </div>
+                
+                <div class="logout">
+                    <button id="logout-button">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+            </div>
+            <div class="main-panel">
+                <div class="header">
+                    <p class="title">View Request</p>
+                    <div class="admin">
+                        <b><p id="uname">Admin</p></b>
+                        <div class="img">
+                            <img src="" alt="" id="admin_pic">
+                        </div>
+                    </div>
+                </div>
+                <div class="content">
+                    <div id="req-content">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            doc,
+            getDoc,
+            updateDoc,
+            query,
+            where
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import {
+            getStorage,
+            ref,
+            uploadBytes,
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-storage.js";
+        import { getAuth, signOut, } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2DZfp8Tnu53kpaBhqY_COiglIanw46Ks",
+            authDomain: "capstone-7239a.firebaseapp.com",
+            projectId: "capstone-7239a",
+            storageBucket: "capstone-7239a.appspot.com",
+            messagingSenderId: "297054120073",
+            appId: "1:297054120073:web:6dd66b7b6d7667ea8efe58",
+            measurementId: "G-GC7CPWCC0V",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const auth = getAuth(app);
+
+        
+        const adminpic = document.getElementById('admin_pic');
+
+
+        function getAuthenticatedUserName() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    console.log("User is authenticated:", user.uid);
+                    const email = user.email; 
+
+                    try {
+                        const usersRef = collection(db, "users");
+                        const q = query(usersRef, where("email", "==", email));
+
+                        const querySnapshot = await getDocs(q);
+
+                        if (!querySnapshot.empty) {
+                            const userDoc = querySnapshot.docs[0].data(); 
+                            const userName = userDoc.name; 
+                            document.getElementById('uname').innerHTML = userName
+                        } else {
+                            console.log(
+                                "No user found with the provided email."
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Error fetching user from Firestore: ",
+                            error
+                        );
+                    }
+
+                    try {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        if (userDocSnap.exists()) {
+                            const profilePictureUrl = userDocSnap.data().profilePictureUrl;
+
+                            if (profilePictureUrl) {
+                                adminpic.src = profilePictureUrl;
+                                adminpic.alt = "User's profile picture"; 
+                            } else {
+                                console.log("No profile picture found for this user.");
+                            }
+                        } else {
+                            console.log("User document not found.");
+                        }
+                    } catch (error) {
+                        console.error("Error fetching user data: ", error);
+                    }
+                } else {
+                    console.error("User is not authenticated");
+                }
+            });
+        }
+        getAuthenticatedUserName();
+
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const documentId = getQueryParam('id');
+
+        if (documentId) {
+            const querySnapshot = await getDocs(collection(db, "requests"));
+            let reqData = null;
+
+            querySnapshot.forEach((doc) => {
+                if (doc.id === documentId) {
+                    reqData = doc.data();
+                    reqData.id = doc.id; 
+                }
+            });
+
+            //PAG FORMAT SA DATE
+            const timestamp = reqData.requestDate;
+            const date = timestamp.toDate();
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            const acceptButton = document.getElementById('acc');
+
+            if (reqData) {
+                document.getElementById('req-content').innerHTML = `
+                        <a href="./requests.html" class="back"> <i class="fa-solid fa-arrow-left"></i> </a>
+                <h3>${reqData.serviceName}</h3>
+                <p style="margin-bottom: 10px"><b>Personal Info</b></p>
+                <table>
+                    <tr>
+                        <td>Requested by: <u>${reqData.name}</u></td>    
+                        <td>Sex: <u>${reqData.sex}</u></td> 
+                    </tr>    
+                    <tr>
+                        <td>Civil Status: <u>${reqData.civilStatus}</u></td> 
+                        <td>Birthday: <u>${reqData.birthday}</u></td>    
+                        
+                    </tr> 
+                    <tr>
+                        <td>Address: <u>${reqData.address}</u></td> 
+                        <td>Contact: <u>${reqData.contact}</u></td> 
+                    </tr> 
+                    <tr>
+                        <td>Occupation: <u>${reqData.occupation}</u></td> 
+                        <td>Income: <u>${reqData.income}</u></td> 
+                    </tr> 
+                </table>
+                <p style="margin-bottom: 10px"><b>Request Info</b></p>
+                <table>
+                    <tr>
+                        <td>Service: <u>${reqData.serviceName}</u></td>    
+                    </tr>    
+                    <tr>
+                        <td>Request Date: <u>${formattedDate}</u></td> 
+                        
+                    </tr> 
+                    <tr>
+                        <td>Status: <u>${reqData.status}</u></td> 
+                    </tr> 
+                </table>
+
+                <p style="margin-bottom: 10px"><b>Supporting Document:</b></p>
+                <img src="${reqData.fileUrls}" width = "600px">
+
+                <input type="text" placeholder="Input remark if rejected" id="rem"> 
+
+                <div class="actions">
+                    <button id="acc"><i class="fa-solid fa-square-check"></i> Accept</button>    
+                    <button id="rej"><i class="fa-solid fa-square-xmark"></i> Reject</button>    
+                </div>
+                `
+
+                if (reqData.status === 'accepted') {
+                    document.getElementById('acc').textContent = "Already Accepted";
+                    document.getElementById('acc').disabled = true; 
+                }
+
+                if (reqData.status === 'rejected') {
+                    document.getElementById('rej').textContent = "Rejected"; 
+                    document.getElementById('rej').disabled = true; 
+                }
+
+
+                // ACCEPT =================
+                const acceptButton = document.getElementById('acc');
+                acceptButton.addEventListener('click', async () => {
+                    try {
+                        const userDocRef = doc(db, "requests", documentId);
+
+                        await updateDoc(userDocRef, {
+                            status: 'accepted',  
+                        });
+
+                        const messageBody = "Your service request from eTULONG has been accepted!";
+                        const contact = reqData.contact; 
+                        const response = await fetch('http://localhost:3000/send-sms', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ contact, messageBody })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            alert("Rejected and SMS notification sent!");
+                        } else {
+                            alert("Failed to send SMS notification!");
+                        }
+
+
+                        window.location.href = "./requests.html"; 
+                    } catch (error) {
+                        console.error("Error updating request:", error);
+                    }
+                });
+
+
+
+                // REJECT ===================
+                const rejButton = document.getElementById('rej');
+                rejButton.addEventListener('click', async () => {
+                    const inputField = document.getElementById('rem');
+                    if (inputField.value.trim() === ''){
+                        inputField.required = true;
+                        inputField.style.border =  '1px solid #e15551';
+                    }else{
+                        try {
+                        const userDocRef = doc(db, "requests", documentId);
+
+                        await updateDoc(userDocRef, {
+                            status: 'rejected',  
+                            remarks: inputField.value
+                        });
+                        
+                        const messageBody = `Your service request from eTULONG has been rejected due to: ${inputField.value}!`;
+                        const contact = reqData.contact; 
+                        const response = await fetch('http://localhost:3000/send-sms', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ contact, messageBody })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            alert("Rejected and SMS notification sent!");
+                        } else {
+                            alert("Failed to send SMS notification!");
+                        }
+
+                        window.location.href = "./requests.html"; 
+                    } catch (error) {
+                        console.error("Error updating request:", error);
+                    }
+                    }
+
+
+                    
+                })
+            } else {
+                console.log("No such document!");
+            }
+        } else {
+            console.error("No document ID in URL.");
+        }
+
+        
+
+        const logoutButton = document.getElementById("logout-button");
+        logoutButton.addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "./../index.html";
+            } catch (error) {
+                console.error("Error logging out: ", error);
+            }
+        });
+
+    </script>
+</html>

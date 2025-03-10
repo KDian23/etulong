@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="shortcut icon" href="./assets/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="./style/index.css">
+    <title>Login</title>
+</head>
+<body>
+    <div class="container">
+        <form id="login-form">
+            <img src="./assets/black.png" alt="" class="left">
+            <img src="./assets/black.png" alt="" class="right">
+
+
+            <div class="logo">
+                <img src="./assets/logo.png" alt="logo">
+                <h1>eTULONG</h1>
+            </div>
+
+            <div class="bot">
+                <h2>Login</h2>
+                <div class="input">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" placeholder="Username" id="username">
+                </div>
+                <div class="input">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" placeholder="Password" id="password">
+                </div>
+                <div class="show">
+                    <input type="checkbox" id="show">
+                    <span><small><label for="show">Show password</label></small></span>
+                </div>
+
+                <button type="submit">Login</button>
+            </div>
+        </form>
+    </div>
+
+
+
+    <script>
+        const eye = document.getElementById('show');
+        const pass = document.getElementById('password');
+
+        eye.addEventListener('change', () => {
+            eye.checked ? pass.type = 'text' : pass.type = 'password';
+        })
+    </script>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyC2DZfp8Tnu53kpaBhqY_COiglIanw46Ks",
+            authDomain: "capstone-7239a.firebaseapp.com",
+            projectId: "capstone-7239a",
+            storageBucket: "capstone-7239a.appspot.com",
+            messagingSenderId: "297054120073",
+            appId: "1:297054120073:web:6dd66b7b6d7667ea8efe58",
+            measurementId: "G-GC7CPWCC0V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginForm = document.getElementById('login-form');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, username, password);
+                alert("Authentication Success!");
+                window.location.href = './admin/dashboard.html';
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
